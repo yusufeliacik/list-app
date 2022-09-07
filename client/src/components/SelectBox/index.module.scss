@@ -1,0 +1,11 @@
+.container {
+    display: block;
+    text-align: left;
+    .label {
+        font-weight: bold;
+    }
+    .error_message {
+        color: red;
+        font-weight: bold;
+    }
+}
