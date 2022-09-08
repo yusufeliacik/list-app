@@ -2,10 +2,10 @@
 
 cd client -> FE
 
-npm install
+npm install &&
 npm start
 
 cd server -> BE
 
-npm install
+npm install &&
 npm start
