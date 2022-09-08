@@ -4,7 +4,9 @@ import { useForm } from "react-hook-form";
 import { Button, Input, SelectBox, BasicTable } from "../../components";
 import { useEffect, useState } from "react";
 import useDebounce from "../../hooks/useDebounce";
-import { EditJobModal } from "../../containers";
+import useSwr from "swr";
+import { fetcher } from "../../utils/fetcher";
+import { order, trColor } from "./utils";
 
 type FormData = {
   job: string;
@@ -23,40 +25,14 @@ type ListData = {
   order: number;
 };
 
-const trColor = (param: string) => {
-  switch (param) {
-    case "Urgent":
-      return "red";
-    case "Regular":
-      return "yellow";
-    case "Trivial":
-      return "lightGreen";
-    default:
-      return "white";
-  }
-};
-
-const order = (param: string) => {
-  switch (param) {
-    case "Urgent":
-      return 1;
-    case "Regular":
-      return 2;
-    case "Trivial":
-      return 3;
-    default:
-      return 0;
-  }
-};
-
 export const Home = () => {
   const [listData, setListData] = useState<ListData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isVisible, setVisible] = useState(false);
-  const [itemData, setItem] = useState<ListData>();
   const [priorityTypes, setPriorityTypes] = useState();
 
   const debouncedValue = useDebounce(searchTerm, 500);
+
+  const { data: priorityData } = useSwr("/api/priority-types", fetcher);
 
   const {
     handleSubmit,
@@ -69,15 +45,10 @@ export const Home = () => {
   });
 
   useEffect(() => {
-    fetch("/api/priority-types", {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    })
-      .then((res) => res.json())
-      .then(({ data }) => setPriorityTypes(data));
-  }, []);
+    if (priorityData) {
+      setPriorityTypes(priorityData.data);
+    }
+  }, [priorityData]);
 
   const onSubmit = (data: FormData) => {
     setListData([
@@ -104,28 +75,16 @@ export const Home = () => {
     );
   };
 
-  const editItem = (index: number) => {
-    setVisible(!isVisible);
-    setItem(listData[index]);
-  };
-
-  const onEdit = (value: string) => {
+  const onEdit = (index?: number, value?: string) => {
     let newArr = [...listData];
 
-    let itemIndex;
-
-    listData.map((item, index) => {
-      return item === itemData ? (itemIndex = index) : (itemIndex = undefined);
-    });
-
-    if (itemIndex !== undefined) {
-      newArr[itemIndex].priority = value;
-      newArr[itemIndex].color = trColor(value);
+    if (index !== undefined && value) {
+      newArr[index].priority = value;
+      newArr[index].color = trColor(value);
+      newArr[index].order = order(value);
     }
 
     setListData(newArr);
-    setItem(undefined);
-    setVisible(!isVisible);
   };
 
   return (
@@ -156,18 +115,10 @@ export const Home = () => {
         </div>
         <BasicTable
           data={filteredData().sort((a, b) => a.order - b.order)}
-          editClick={editItem}
+          onEdit={onEdit}
           deleteClick={deleteItem}
         />
       </div>
-      {isVisible && (
-        <EditJobModal
-          setVisible={() => setVisible(!isVisible)}
-          onEdit={onEdit}
-          optionsSelect={priorityTypes}
-          defaultValue={itemData?.priority}
-        />
-      )}
     </div>
   );
 };

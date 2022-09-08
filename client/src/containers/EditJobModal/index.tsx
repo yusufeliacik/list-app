@@ -2,21 +2,25 @@ import { FC, useState } from "react";
 import { Modal } from "react-bootstrap";
 import { SelectBox } from "../../components";
 import { Button } from "../../components/Button";
+import { fetcher } from "../../utils/fetcher";
+import useSwr from "swr";
 
 type Props = {
   setVisible: () => void;
-  optionsSelect?: Array<{ label: string; value: string }>;
-  onEdit: (value: string) => void;
+  onEdit: (index?: number, value?: string) => void;
+  itemIndex: number;
   defaultValue?: string;
 };
 
 export const EditJobModal: FC<Props> = ({
   setVisible,
-  optionsSelect,
   onEdit,
   defaultValue,
+  itemIndex,
 }) => {
   const [priority, setPriority] = useState("");
+  const { data: priorityData } = useSwr("/api/priority-types", fetcher);
+
   const onChange = (e: string) => {
     setPriority(e);
   };
@@ -31,14 +35,20 @@ export const EditJobModal: FC<Props> = ({
         <SelectBox
           label="Priority"
           name="priority"
-          options={optionsSelect}
+          options={priorityData?.data}
           onChange={onChange}
           defaultValue={defaultValue}
         />
       </Modal.Body>
 
       <Modal.Footer>
-        <Button text="edit" onClick={() => onEdit(priority)} />
+        <Button
+          text="edit"
+          onClick={() => {
+            onEdit(itemIndex, priority);
+            setVisible();
+          }}
+        />
       </Modal.Footer>
     </Modal>
   );
